@@ -2,6 +2,12 @@
 #ifndef _LINUX_SCHED_H
 #define _LINUX_SCHED_H
 
+/**
+ * hwollin-process ★★★★★
+ * 
+ * 该头文件用于定义 进程结构体task_struct
+ */
+
 /*
  * Define 'struct task_struct' and provide the main scheduler
  * APIs (schedule(), wakeup variants, etc.)

@@ -96,15 +96,15 @@ struct dentry {
 	unsigned int d_flags;		/* protected by d_lock */
 	seqcount_spinlock_t d_seq;	/* per dentry seqlock */
 	struct hlist_bl_node d_hash;	/* lookup hash list */
-	struct dentry *d_parent;	/* parent directory */
-	struct qstr d_name;
-	struct inode *d_inode;		/* Where the name belongs to - NULL is
+	struct dentry *d_parent;	/* parent directory  父目录 */
+	struct qstr d_name; /* 文件名 */
+	struct inode *d_inode;		/* Where the name belongs to - NULL is   该目录项对应的inode
 					 * negative */
-	unsigned char d_iname[DNAME_INLINE_LEN];	/* small names */
+	unsigned char d_iname[DNAME_INLINE_LEN];	/* small names  文件名较短时在这里存储文件名 */
 
 	/* Ref lookup also touches following */
 	struct lockref d_lockref;	/* per-dentry lock and refcount */
-	const struct dentry_operations *d_op;
+	const struct dentry_operations *d_op; /* 定义在目录项上的操作集 */
 	struct super_block *d_sb;	/* The root of the dentry tree */
 	unsigned long d_time;		/* used by d_revalidate */
 	void *d_fsdata;			/* fs-specific data */
@@ -113,8 +113,8 @@ struct dentry {
 		struct list_head d_lru;		/* LRU list */
 		wait_queue_head_t *d_wait;	/* in-lookup ones only */
 	};
-	struct list_head d_child;	/* child of parent list */
-	struct list_head d_subdirs;	/* our children */
+	struct list_head d_child;	/* child of parent list 将自己加入到父目录的孩子列表 */
+	struct list_head d_subdirs;	/* our children  子目录 */
 	/*
 	 * d_alias and d_rcu can share memory
 	 */
@@ -137,17 +137,20 @@ enum dentry_d_lock_class
 	DENTRY_D_LOCK_NESTED
 };
 
+/**
+ * 定义在目录项上的操作集
+ */ 
 struct dentry_operations {
-	int (*d_revalidate)(struct dentry *, unsigned int);
+	int (*d_revalidate)(struct dentry *, unsigned int); // 确认目录项是否有效
 	int (*d_weak_revalidate)(struct dentry *, unsigned int);
 	int (*d_hash)(const struct dentry *, struct qstr *);
 	int (*d_compare)(const struct dentry *,
 			unsigned int, const char *, const struct qstr *);
-	int (*d_delete)(const struct dentry *);
+	int (*d_delete)(const struct dentry *); // 目录项的引用计数为0时判断是否释放目录项的内存
 	int (*d_init)(struct dentry *);
-	void (*d_release)(struct dentry *);
+	void (*d_release)(struct dentry *); // 释放目录项的内存之前调用
 	void (*d_prune)(struct dentry *);
-	void (*d_iput)(struct dentry *, struct inode *);
+	void (*d_iput)(struct dentry *, struct inode *); // 释放目录项关联的inode
 	char *(*d_dname)(struct dentry *, char *, int);
 	struct vfsmount *(*d_automount)(struct path *);
 	int (*d_manage)(const struct path *, bool);

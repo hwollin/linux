@@ -2116,7 +2116,7 @@ struct inode_operations {
 	int (*symlink) (struct user_namespace *, struct inode *,struct dentry *,
 			const char *); // 创建符号链接/软链接
 	int (*mkdir) (struct user_namespace *, struct inode *,struct dentry *,
-		      umode_t);
+		      umode_t); // 创建目录
 	int (*rmdir) (struct inode *,struct dentry *);
 	int (*mknod) (struct user_namespace *, struct inode *,struct dentry *,
 		      umode_t,dev_t); // 创建特殊文件 make node

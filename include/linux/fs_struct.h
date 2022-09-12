@@ -12,7 +12,7 @@ struct fs_struct {
 	seqcount_spinlock_t seq;
 	int umask;
 	int in_exec;
-	struct path root, pwd;
+	struct path root, pwd; // root根路径 pwd当前路径
 } __randomize_layout;
 
 extern struct kmem_cache *fs_cachep;

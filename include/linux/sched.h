@@ -1070,7 +1070,7 @@ struct task_struct {
 	unsigned long			last_switch_time;
 #endif
 	/* Filesystem information: */
-	struct fs_struct		*fs;
+	struct fs_struct		*fs; // 该进程眼中的文件系统？
 
 	/* Open file information: */
 	struct files_struct		*files;  // 进程的打开文件表
@@ -1079,7 +1079,7 @@ struct task_struct {
 	struct io_uring_task		*io_uring;
 #endif
 
-	/* Namespaces: */
+	/* Namespaces:  命名空间代理 */
 	struct nsproxy			*nsproxy;
 
 	/* Signal handlers: */

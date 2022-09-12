@@ -5,6 +5,13 @@
 #include <linux/ns_common.h>
 #include <linux/fs_pin.h>
 
+/**
+ * 每个进程属于一个挂载命名空间
+ * 
+ * 创建新的挂载命名空间的方法：
+ *    (1)创建子进程时指定CLONE_NEWNS标志
+ * 	  (2)子进程调用unshare(CLONE_NEWNS)	
+ */ 
 struct mnt_namespace {
 	struct ns_common	ns;
 	struct mount *	root;

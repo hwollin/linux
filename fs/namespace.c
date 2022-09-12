@@ -2949,6 +2949,8 @@ static int do_new_mount_fc(struct fs_context *fc, struct path *mountpoint,
 /*
  * create a new mount for userspace and request it to be added into the
  * namespace's tree
+ * 
+ * mount文件系统的核心
  */
 static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
 			int mnt_flags, const char *name, void *data)
@@ -2961,7 +2963,7 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
 	if (!fstype)
 		return -EINVAL;
 
-	type = get_fs_type(fstype);
+	type = get_fs_type(fstype); // 获取文件系统类型，最终会调用type中的mount方法
 	if (!type)
 		return -ENODEV;
 
@@ -3422,7 +3424,7 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
 
 	old = ns->root;
 
-	new_ns = alloc_mnt_ns(user_ns, false);
+	new_ns = alloc_mnt_ns(user_ns, false); // 分配内存创建新的挂载命名空间
 	if (IS_ERR(new_ns))
 		return new_ns;
 
@@ -3431,7 +3433,7 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
 	copy_flags = CL_COPY_UNBINDABLE | CL_EXPIRE;
 	if (user_ns != ns->user_ns)
 		copy_flags |= CL_SHARED_TO_SLAVE;
-	new = copy_tree(old, old->mnt.mnt_root, copy_flags);
+	new = copy_tree(old, old->mnt.mnt_root, copy_flags); // 拷贝挂载树
 	if (IS_ERR(new)) {
 		namespace_unlock();
 		free_mnt_ns(new_ns);
@@ -3475,9 +3477,9 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
 	namespace_unlock();
 
 	if (rootmnt)
-		mntput(rootmnt);
+		mntput(rootmnt); // 设置子进程的根目录的挂载描述符
 	if (pwdmnt)
-		mntput(pwdmnt);
+		mntput(pwdmnt); // 设置子进程的当前目录的挂载描述符
 
 	return new_ns;
 }
@@ -3519,6 +3521,9 @@ struct dentry *mount_subtree(struct vfsmount *m, const char *name)
 }
 EXPORT_SYMBOL(mount_subtree);
 
+/**
+ * mount系统调用，用于挂载文件系统
+ */ 
 SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
 		char __user *, type, unsigned long, flags, void __user *, data)
 {
@@ -3542,6 +3547,9 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
 	if (IS_ERR(options))
 		goto out_data;
 
+	/**
+	 * 核心是do_mount
+	 */ 
 	ret = do_mount(kernel_dev, dir_name, kernel_type, flags, options);
 
 	kfree(options);

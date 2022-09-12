@@ -2194,7 +2194,7 @@ static __latent_entropy struct task_struct *copy_process(
 	retval = copy_mm(clone_flags, p);
 	if (retval)
 		goto bad_fork_cleanup_signal;
-	retval = copy_namespaces(clone_flags, p);
+	retval = copy_namespaces(clone_flags, p); // 拷贝命名空间
 	if (retval)
 		goto bad_fork_cleanup_mm;
 	retval = copy_io(clone_flags, p);
@@ -2543,8 +2543,12 @@ struct task_struct *create_io_thread(int (*fn)(void *), void *arg, int node)
 	return copy_process(NULL, 0, node, &args);
 }
 
-/*
- *  Ok, this is the main fork-routine.
+/**
+ * hwollin-process  ★★★★★ 
+ * 
+ * 创建子进程的核心
+ * 
+ * Ok, this is the main fork-routine.
  *
  * It copies the process, and if successful kick-starts
  * it and waits for it to finish using the VM if required.
@@ -2592,6 +2596,9 @@ pid_t kernel_clone(struct kernel_clone_args *args)
 			trace = 0;
 	}
 
+	/**
+	 * 拷贝父进程的资源
+	 */ 	
 	p = copy_process(NULL, trace, NUMA_NO_NODE, args);
 	add_latent_entropy();
 
@@ -2647,6 +2654,14 @@ pid_t kernel_thread(int (*fn)(void *), void *arg, unsigned long flags)
 	return kernel_clone(&args);
 }
 
+/**
+ * hwollin-process ★★★★★
+ * 
+ * fork系统调用
+ *     创建子进程
+ *    
+ * 见vfork clone系统调用（都是用于创建子进程）
+ */ 
 #ifdef __ARCH_WANT_SYS_FORK
 SYSCALL_DEFINE0(fork)
 {
@@ -2663,6 +2678,17 @@ SYSCALL_DEFINE0(fork)
 }
 #endif
 
+/**
+ * hwollin-process ★★★
+ * 
+ * vfork系统调用 
+ *     linux man page:
+ * 	       <1> create a child process and block parent
+ *         <2> is a special case of clone(2), It is used to create new processes without copying the page tables
+ *             of the parent process. It may be useful in performance-sensitive applications where a child is created
+ *             which then immediately issues an execve(2). 
+ * 		   <3> the calling thread is suspended until the child terminates, or it makes a call to execve(2)   		
+ */ 
 #ifdef __ARCH_WANT_SYS_VFORK
 SYSCALL_DEFINE0(vfork)
 {
@@ -2675,6 +2701,13 @@ SYSCALL_DEFINE0(vfork)
 }
 #endif
 
+/**
+ * hwollin-process ★★★★★
+ * 
+ * clone系统调用 
+ * 
+ * 相对于fork，可以设置一系列的参数，更精确的控制fork，比如子进程不想和父进程共享命名空间
+ */ 
 #ifdef __ARCH_WANT_SYS_CLONE
 #ifdef CONFIG_CLONE_BACKWARDS
 SYSCALL_DEFINE5(clone, unsigned long, clone_flags, unsigned long, newsp,

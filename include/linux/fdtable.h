@@ -45,6 +45,7 @@ static inline bool fd_is_open(unsigned int fd, const struct fdtable *fdt)
 
 /*
  * Open file table structure
+ * 进程的打开文件表
  */
 struct files_struct {
   /*

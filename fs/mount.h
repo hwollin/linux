@@ -29,18 +29,32 @@ struct mnt_pcp {
 	int mnt_writers;
 };
 
+/**
+ * 挂载点 比如/Users/hw/u
+ */ 
 struct mountpoint {
 	struct hlist_node m_hash;
-	struct dentry *m_dentry;
-	struct hlist_head m_list;
+	struct dentry *m_dentry; // 挂载点目录
+	struct hlist_head m_list; // 同一个挂载点可能挂载了多个文件系统(mount)，挂载命名空间相关
 	int m_count;
 };
 
-struct mount {
+/**
+ * 挂载文件系统
+ * 
+ * 一个mount结构体对应一个被挂载的文件系统，一个文件系统可以在不同的目录下被挂载多次
+ * 
+ * 假设我们把u盘挂载到了/Users/hw/u目录下，u盘中的文件系统叫做fs_u，/Users/hw/u所在的
+ * 文件系统叫做fs_default，一个文件系统可能对应多个mount实例
+ * 
+ * 相关结构体：
+ *     include/linux/fs.h   struct super_block
+ */ 
+struct mount { // 假设它是fs_u的一个mount实例
 	struct hlist_node mnt_hash;
-	struct mount *mnt_parent;
-	struct dentry *mnt_mountpoint;
-	struct vfsmount mnt;
+	struct mount *mnt_parent; // 父文件系统，fs_default对应的mount
+	struct dentry *mnt_mountpoint; // 挂载点，即/Users/hw/u
+	struct vfsmount mnt; // 记录被挂载的文件系统的根目录和超级块
 	union {
 		struct rcu_head mnt_rcu;
 		struct llist_node mnt_llist;
@@ -51,10 +65,10 @@ struct mount {
 	int mnt_count;
 	int mnt_writers;
 #endif
-	struct list_head mnt_mounts;	/* list of children, anchored here */
-	struct list_head mnt_child;	/* and going through their mnt_child */
-	struct list_head mnt_instance;	/* mount instance on sb->s_mounts */
-	const char *mnt_devname;	/* Name of device e.g. /dev/dsk/hda1 */
+	struct list_head mnt_mounts;	/* list of children, anchored here 子文件系统链表头节点 */
+	struct list_head mnt_child;	/* and going through their mnt_child 用于加入子文件系统链表 */
+	struct list_head mnt_instance;	/* mount instance on sb->s_mounts  */
+	const char *mnt_devname;	/* Name of device e.g. /dev/dsk/hda1 设备名 */
 	struct list_head mnt_list;
 	struct list_head mnt_expire;	/* link in fs-specific expiry list */
 	struct list_head mnt_share;	/* circular list of shared mounts */
@@ -62,9 +76,9 @@ struct mount {
 	struct list_head mnt_slave;	/* slave list entry */
 	struct mount *mnt_master;	/* slave is on master->mnt_slave_list */
 	struct mnt_namespace *mnt_ns;	/* containing namespace */
-	struct mountpoint *mnt_mp;	/* where is it mounted */
+	struct mountpoint *mnt_mp;	/* where is it mounted  挂载点 */
 	union {
-		struct hlist_node mnt_mp_list;	/* list mounts with the same mountpoint */
+		struct hlist_node mnt_mp_list;	/* list mounts with the same mountpoint 同一个挂载点可能挂载了多个文件系统mount */
 		struct hlist_node mnt_umount;
 	};
 	struct list_head mnt_umounting; /* list entry for umount propagation */

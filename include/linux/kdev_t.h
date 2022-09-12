@@ -4,6 +4,11 @@
 
 #include <uapi/linux/kdev_t.h>
 
+/**
+ * dev_t u32  
+ * 
+ * 12bits(主设备号) 20bits(次设备号)
+ */ 
 #define MINORBITS	20
 #define MINORMASK	((1U << MINORBITS) - 1)
 

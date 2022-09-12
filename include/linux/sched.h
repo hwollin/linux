@@ -1073,7 +1073,7 @@ struct task_struct {
 	struct fs_struct		*fs;
 
 	/* Open file information: */
-	struct files_struct		*files;
+	struct files_struct		*files;  // 进程的打开文件表
 
 #ifdef CONFIG_IO_URING
 	struct io_uring_task		*io_uring;

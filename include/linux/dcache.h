@@ -88,6 +88,9 @@ extern struct dentry_stat_t dentry_stat;
 
 #define d_lock	d_lockref.lock
 
+/**
+ * 目录也是文件，这种文件的数据是目录项
+ */ 
 struct dentry {
 	/* RCU lookup touched fields */
 	unsigned int d_flags;		/* protected by d_lock */

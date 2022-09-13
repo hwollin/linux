@@ -6,7 +6,7 @@
 #include <linux/fs_pin.h>
 
 /**
- * 每个进程属于一个挂载命名空间
+ * 每个进程属于一个挂载命名空间(即一个挂载命名空间下有多个进程)
  * 
  * 创建新的挂载命名空间的方法：
  *    (1)创建子进程时指定CLONE_NEWNS标志
@@ -14,7 +14,7 @@
  */ 
 struct mnt_namespace {
 	struct ns_common	ns;
-	struct mount *	root;
+	struct mount *	root; // 挂载树的root根节点
 	/*
 	 * Traversal and modification of .list is protected by either
 	 * - taking namespace_sem for write, OR
@@ -49,7 +49,7 @@ struct mountpoint {
 /**
  * 挂载文件系统
  * 
- * 一个mount结构体对应一个被挂载的文件系统，一个文件系统可以在不同的目录下被挂载多次
+ * 一个mount结构体对应一个被挂载的文件系统，一个文件系统可以被挂载多次
  * 
  * 假设我们把u盘挂载到了/Users/hw/u目录下，u盘中的文件系统叫做fs_u，/Users/hw/u所在的
  * 文件系统叫做fs_default，一个文件系统可能对应多个mount实例

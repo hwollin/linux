@@ -1079,7 +1079,7 @@ struct task_struct {
 	struct io_uring_task		*io_uring;
 #endif
 
-	/* Namespaces:  命名空间代理 */
+	/* Namespaces:  命名空间代理  命名空间用于隔离资源 */
 	struct nsproxy			*nsproxy;
 
 	/* Signal handlers: */

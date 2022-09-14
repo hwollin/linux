@@ -3257,6 +3257,11 @@ void __init vfs_caches_init_early(void)
 	inode_init_early();
 }
 
+/**
+ * hwollin-boot ★★★★ 
+ * 
+ * 文件系统初始化
+ */
 void __init vfs_caches_init(void)
 {
 	names_cachep = kmem_cache_create_usercopy("names_cache", PATH_MAX, 0,
@@ -3266,7 +3271,7 @@ void __init vfs_caches_init(void)
 	inode_init();
 	files_init();
 	files_maxfiles_init();
-	mnt_init();
+	mnt_init(); //挂载初始化，在这里挂载rootfs
 	bdev_cache_init();
 	chrdev_init();
 }

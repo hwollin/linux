@@ -932,6 +932,11 @@ static void __init print_unknown_bootoptions(void)
 	memblock_free_ptr(unknown_options, len);
 }
 
+/**
+ * hwollin-boot ★★★★
+ * 
+ * 内核初始化，启动内核
+ */ 
 asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 {
 	char *command_line;
@@ -1122,7 +1127,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	security_init();
 	dbg_late_init();
 	net_ns_init();
-	vfs_caches_init();
+	vfs_caches_init(); // 初始化文件系统
 	pagecache_init();
 	signals_init();
 	seq_file_init();
@@ -1498,6 +1503,9 @@ void __weak free_initmem(void)
 	free_initmem_default(POISON_FREE_INITMEM);
 }
 
+/**
+ * 内核初始化
+ */ 
 static int __ref kernel_init(void *unused)
 {
 	int ret;
@@ -1507,7 +1515,7 @@ static int __ref kernel_init(void *unused)
 	 */
 	wait_for_completion(&kthreadd_done);
 
-	kernel_init_freeable();
+	kernel_init_freeable(); // 在这里会打开/dev/console文件，创建stdin stdout stderr
 	/* need to finish all async __init code before freeing the memory */
 	async_synchronize_full();
 	kprobe_free_init_mem();
@@ -1571,7 +1579,13 @@ static int __ref kernel_init(void *unused)
 	      "See Linux Documentation/admin-guide/init.rst for guidance.");
 }
 
-/* Open /dev/console, for stdin/stdout/stderr, this should never fail */
+/**
+ * Open /dev/console, for stdin/stdout/stderr, this should never fail 
+ * 
+ * hwollin-boot ★★★★★
+ * 
+ * 创建stdin stdout stderr
+ */
 void __init console_on_rootfs(void)
 {
 	struct file *file = filp_open("/dev/console", O_RDWR, 0);
@@ -1586,6 +1600,11 @@ void __init console_on_rootfs(void)
 	fput(file);
 }
 
+/**
+ * hwollin-boot ★★★★★
+ * 
+ * 在这里会打开/dev/console文件，创建stdin stdout stderr
+ */ 
 static noinline void __init kernel_init_freeable(void)
 {
 	/* Now the scheduler is fully set up and can do blocking allocations */
@@ -1621,7 +1640,7 @@ static noinline void __init kernel_init_freeable(void)
 	kunit_run_all_tests();
 
 	wait_for_initramfs();
-	console_on_rootfs();
+	console_on_rootfs(); // stdin stdout stderr 看上面紧挨着的函数
 
 	/*
 	 * check if there is an early userspace init.  If yes, let it do all

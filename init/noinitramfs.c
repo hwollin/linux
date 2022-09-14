@@ -14,22 +14,23 @@
 
 /*
  * Create a simple rootfs that is similar to the default initramfs
+ * 在rootfs中创建必要的目录和文件
  */
 static int __init default_rootfs(void)
 {
 	int err;
 
 	usermodehelper_enable();
-	err = init_mkdir("/dev", 0755);
+	err = init_mkdir("/dev", 0755); // 创建目录 -> /dev
 	if (err < 0)
 		goto out;
 
 	err = init_mknod("/dev/console", S_IFCHR | S_IRUSR | S_IWUSR,
-			new_encode_dev(MKDEV(5, 1)));
+			new_encode_dev(MKDEV(5, 1))); // 创建文件 -> /dev/console, 主设备号5，从设备号1
 	if (err < 0)
 		goto out;
 
-	err = init_mkdir("/root", 0700);
+	err = init_mkdir("/root", 0700); // 创建目录 -> /root
 	if (err < 0)
 		goto out;
 

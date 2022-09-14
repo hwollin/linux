@@ -2506,6 +2506,9 @@ int sync_inode_metadata(struct inode *inode, int wait);
 
 /**
  * 文件系统类型
+ * 
+ * rootfs: 根文件系统, 内核初始化时最先挂载的系统, 它是一个内存文件系统(/dev/console就属于该文件系统)  定义在do_mounts.c结尾
+ * 
  */ 
 struct file_system_type {
 	const char *name; // 文件系统类型名

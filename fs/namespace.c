@@ -4311,6 +4311,9 @@ SYSCALL_DEFINE5(mount_setattr, int, dfd, const char __user *, path,
 	return err;
 }
 
+/**
+ * 挂载rootfs文件系统
+ */ 
 static void __init init_mount_tree(void)
 {
 	struct vfsmount *mnt;
@@ -4318,11 +4321,11 @@ static void __init init_mount_tree(void)
 	struct mnt_namespace *ns;
 	struct path root;
 
-	mnt = vfs_kern_mount(&rootfs_fs_type, 0, "rootfs", NULL);
+	mnt = vfs_kern_mount(&rootfs_fs_type, 0, "rootfs", NULL); // 挂载rootfs
 	if (IS_ERR(mnt))
 		panic("Can't create rootfs");
 
-	ns = alloc_mnt_ns(&init_user_ns, false);
+	ns = alloc_mnt_ns(&init_user_ns, false); // 创建第一个挂载命名空间
 	if (IS_ERR(ns))
 		panic("Can't allocate initial namespace");
 	m = real_mount(mnt);
@@ -4330,17 +4333,22 @@ static void __init init_mount_tree(void)
 	ns->root = m;
 	ns->mounts = 1;
 	list_add(&m->mnt_list, &ns->list);
-	init_task.nsproxy->mnt_ns = ns;
+	init_task.nsproxy->mnt_ns = ns; // 设置0号进程init_task的挂载命名空间
 	get_mnt_ns(ns);
 
 	root.mnt = mnt;
 	root.dentry = mnt->mnt_root;
 	mnt->mnt_flags |= MNT_LOCKED;
 
-	set_fs_pwd(current->fs, &root);
-	set_fs_root(current->fs, &root);
+	set_fs_pwd(current->fs, &root); // 设置0号进程的pwd为rootfs的根目录
+	set_fs_root(current->fs, &root); // 设置0号进程的root目录为rootfs的根目录
 }
 
+/**
+ * hwollin-boot ★★★★
+ * 
+ * 在这里挂载rootfs
+ */ 
 void __init mnt_init(void)
 {
 	int err;
@@ -4372,8 +4380,8 @@ void __init mnt_init(void)
 	if (!fs_kobj)
 		printk(KERN_WARNING "%s: kobj create error\n", __func__);
 	shmem_init();
-	init_rootfs();
-	init_mount_tree();
+	init_rootfs(); // 注册rootfs文件系统
+	init_mount_tree(); // 挂载rootfs文件系统
 }
 
 void put_mnt_ns(struct mnt_namespace *ns)

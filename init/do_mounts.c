@@ -295,6 +295,9 @@ dev_t name_to_dev_t(const char *name)
 }
 EXPORT_SYMBOL_GPL(name_to_dev_t);
 
+/**
+ * 将设备名存储到saved_root_name变量
+ */ 
 static int __init root_dev_setup(char *line)
 {
 	strlcpy(saved_root_name, line, sizeof(saved_root_name));
@@ -321,6 +324,10 @@ static int __init root_data_setup(char *str)
 }
 
 static char * __initdata root_fs_names;
+
+/**
+ * 存储文件系统名
+ */ 
 static int __init fs_names_setup(char *str)
 {
 	root_fs_names = str;
@@ -355,6 +362,9 @@ static int __init split_fs_names(char *page, size_t size, char *names)
 	return count;
 }
 
+/**
+ * 将根文件系统挂载到 /root 下
+ */ 
 static int __init do_mount_root(const char *name, const char *fs,
 				 const int flags, const void *data)
 {
@@ -402,7 +412,7 @@ void __init mount_block_root(char *name, int flags)
 
 	scnprintf(b, BDEVNAME_SIZE, "unknown-block(%u,%u)",
 		  MAJOR(ROOT_DEV), MINOR(ROOT_DEV));
-	if (root_fs_names)
+	if (root_fs_names) // 以逗号分开，指定多个文件系统类型
 		num_fs = split_fs_names(fs_names, PAGE_SIZE, root_fs_names);
 	else
 		num_fs = list_bdev_fs_names(fs_names, PAGE_SIZE);
@@ -412,7 +422,7 @@ retry:
 
 		if (!*p)
 			continue;
-		err = do_mount_root(name, p, flags, root_mount_data);
+		err = do_mount_root(name, p, flags, root_mount_data); // 尝试挂载根文件系统，成功就退出
 		switch (err) {
 			case 0:
 				goto out;
@@ -564,6 +574,15 @@ static int __init mount_nodev_root(void)
 	return err;
 }
 
+/**
+ * 挂载用户指定的根文件系统 
+ * 
+ * 假设根文件系统存储设备是/dev/sda1，文件系统类型为EXT4，挂载该文件系统相当于执行
+ * 		mount -t ext4 /dev/sda1 /root :
+ * 		    step1. 创建块设备文件/dev/root，使用根设备的设备号
+ *          step2. 将根文件系统挂载到/root，相当于执行以下命令
+ * 				mount –t ext4 /dev/root /root
+ */
 void __init mount_root(void)
 {
 #ifdef CONFIG_ROOT_NFS
@@ -584,13 +603,13 @@ void __init mount_root(void)
 		if (mount_nodev_root() == 0)
 			return;
 	}
-#ifdef CONFIG_BLOCK
+#ifdef CONFIG_BLOCK // 如果根设备是块设备
 	{
-		int err = create_dev("/dev/root", ROOT_DEV);
+		int err = create_dev("/dev/root", ROOT_DEV); // 创建块设备文件/dev/root，使用根设备的设备号
 
 		if (err < 0)
 			pr_emerg("Failed to create /dev/root: %d\n", err);
-		mount_block_root("/dev/root", root_mountflags);
+		mount_block_root("/dev/root", root_mountflags); // 将根文件系统挂载到/root
 	}
 #endif
 }
@@ -619,9 +638,12 @@ void __init prepare_namespace(void)
 
 	if (saved_root_name[0]) {
 		root_device_name = saved_root_name;
+		/**
+		 * 设备名称以mtd或ubi开头，代表了闪存
+		 */ 
 		if (!strncmp(root_device_name, "mtd", 3) ||
 		    !strncmp(root_device_name, "ubi", 3)) {
-			mount_block_root(root_device_name, root_mountflags);
+			mount_block_root(root_device_name, root_mountflags); // 将用户指定的根文件系统挂载到/root下
 			goto out;
 		}
 		ROOT_DEV = name_to_dev_t(root_device_name);
@@ -642,11 +664,16 @@ void __init prepare_namespace(void)
 		async_synchronize_full();
 	}
 
+	/**
+	 * 其他存储设备，比如机械硬盘或固态硬盘
+	 * 
+	 * 将用户指定的根文件系统挂载到/root下
+	 */ 
 	mount_root();
 out:
 	devtmpfs_mount();
-	init_mount(".", "/", NULL, MS_MOVE, NULL);
-	init_chroot(".");
+	init_mount(".", "/", NULL, MS_MOVE, NULL); // 将根文件系统从/root下移动到/
+	init_chroot("."); // 设置1号进程的根目录
 }
 
 static bool is_tmpfs;

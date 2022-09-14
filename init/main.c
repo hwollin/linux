@@ -975,6 +975,12 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	/* parameters may set static keys */
 	jump_label_init();
 	parse_early_param();
+
+	/**
+	 * 解析参数
+	 * 
+	 * dashes 破折号的意思，破折号后面跟的就是我们指定的参数
+	 */ 
 	after_dashes = parse_args("Booting kernel",
 				  static_command_line, __start___param,
 				  __stop___param - __start___param,
@@ -1648,7 +1654,7 @@ static noinline void __init kernel_init_freeable(void)
 	 */
 	if (init_eaccess(ramdisk_execute_command) != 0) {
 		ramdisk_execute_command = NULL;
-		prepare_namespace();
+		prepare_namespace(); // 挂载用户指定的根文件系统
 	}
 
 	/*

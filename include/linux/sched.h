@@ -1072,8 +1072,14 @@ struct task_struct {
 	/* Filesystem information: */
 	struct fs_struct		*fs; // 该进程眼中的文件系统？
 
-	/* Open file information: */
-	struct files_struct		*files;  // 进程的打开文件表
+	/**
+	 * Open file information:
+	 * 
+	 * 进程的打开文件表
+	 * 
+	 * 默认最多打开1024个文件?  执行命令ulimit -a
+	 */
+	struct files_struct		*files;
 
 #ifdef CONFIG_IO_URING
 	struct io_uring_task		*io_uring;

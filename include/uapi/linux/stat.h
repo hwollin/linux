@@ -14,9 +14,9 @@
 #define S_IFDIR  0040000
 #define S_IFCHR  0020000
 #define S_IFIFO  0010000
-#define S_ISUID  0004000
-#define S_ISGID  0002000
-#define S_ISVTX  0001000
+#define S_ISUID  0004000  /* set user id */
+#define S_ISGID  0002000  /* set group id */
+#define S_ISVTX  0001000  /* sticky bit, see man inode */
 
 #define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
 #define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
@@ -26,17 +26,24 @@
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
 #define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
 
-#define S_IRWXU 00700
-#define S_IRUSR 00400
-#define S_IWUSR 00200
-#define S_IXUSR 00100
+/**
+ * 用于参数mode，创建文件时指定用户权限
+ * 
+ * S probably for stat, I probably for inode   
+ * 
+ * (U | USR) -> User
+ */ 
+#define S_IRWXU 00700  /* owner has [read | write | execute] permission */
+#define S_IRUSR 00400  /* owner has [read] permission */
+#define S_IWUSR 00200  /* owner has [write] permission */
+#define S_IXUSR 00100  /* owner has [execute] permission */
 
-#define S_IRWXG 00070
+#define S_IRWXG 00070  /* (G | GRP) -> Group */
 #define S_IRGRP 00040
 #define S_IWGRP 00020
 #define S_IXGRP 00010
 
-#define S_IRWXO 00007
+#define S_IRWXO 00007 /* (O | OTH) -> Others(not in group) */ 
 #define S_IROTH 00004
 #define S_IWOTH 00002
 #define S_IXOTH 00001

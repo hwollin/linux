@@ -1195,6 +1195,11 @@ struct file *file_open_root(const struct path *root,
 }
 EXPORT_SYMBOL(file_open_root);
 
+/**
+ * 打开文件open的核心代码
+ * 
+ * dfd: 基准目录的fd 
+ */ 
 static long do_sys_openat2(int dfd, const char __user *filename,
 			   struct open_how *how)
 {
@@ -1224,13 +1229,32 @@ static long do_sys_openat2(int dfd, const char __user *filename,
 	return fd;
 }
 
+/**
+ * 打开文件open的核心代码
+ * 
+ * flags:
+ *     O_RDONLY: Open as readonly
+ *     O_WRONLY: Open as writeonly
+ *     O_RDWR:   Open as readwrite
+ *     ...
+ *     见 tools/include/uapi/asm-generic/fcntl.h
+ * 
+ * mode:
+ *     仅当创建新文件时才使用，用于设置用户访问权限
+ *     其他情况下可以忽略该参数
+ *     见 include/uapi/linux/stat.h
+ */ 
 long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 {
 	struct open_how how = build_open_how(flags, mode);
 	return do_sys_openat2(dfd, filename, &how);
 }
 
-
+/**
+ * hwollin-fs-open ★★★★★
+ * 
+ * open系统调用，打开文件
+ */ 
 SYSCALL_DEFINE3(open, const char __user *, filename, int, flags, umode_t, mode)
 {
 	if (force_o_largefile())

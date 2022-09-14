@@ -157,7 +157,12 @@ static int parse_one(char *param,
 	return -ENOENT;
 }
 
-/* Args looks like "foo=bar,bar2 baz=fuz wiz". */
+/** 
+ * Args looks like "foo=bar,bar2 baz=fuz wiz". 
+ * 
+ * 参数root用来指定根文件系统所在的设备 -> root_dev_setup(解析函数)
+ * 参数rootfstype用来指定根文件系统的类型，-> fs_names_setup
+ */
 char *parse_args(const char *doing,
 		 char *args,
 		 const struct kernel_param *params,

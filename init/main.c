@@ -1594,9 +1594,9 @@ void __init console_on_rootfs(void)
 		pr_err("Warning: unable to open an initial console.\n");
 		return;
 	}
-	init_dup(file);
-	init_dup(file);
-	init_dup(file);
+	init_dup(file); // 添加映射 fd(0) -> file(/dev/console), 即stdin
+	init_dup(file); // 添加映射 fd(1) -> file(/dev/console), 即stdout
+	init_dup(file); // 添加映射 fd(2) -> file(/dev/console), 即stderr
 	fput(file);
 }
 

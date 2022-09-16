@@ -634,6 +634,9 @@ SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename,
 	return do_fchmodat(dfd, filename, mode);
 }
 
+/**
+ * 修改文件访问权限系统调用 change mode
+ */ 
 SYSCALL_DEFINE2(chmod, const char __user *, filename, umode_t, mode)
 {
 	return do_fchmodat(AT_FDCWD, filename, mode);
@@ -952,6 +955,8 @@ EXPORT_SYMBOL(file_path);
  * @path: path to open
  * @file: newly allocated file with f_flag initialized
  * @cred: credentials to use
+ * 
+ * 调用具体文件系统类型的open方法打开文件
  */
 int vfs_open(const struct path *path, struct file *file)
 {
@@ -972,6 +977,9 @@ struct file *dentry_open(const struct path *path, int flags,
 
 	f = alloc_empty_file(flags, cred);
 	if (!IS_ERR(f)) {
+		/**
+		 * 调用具体文件系统类型的open方法打开文件
+		 */ 
 		error = vfs_open(path, f);
 		if (error) {
 			fput(f);
@@ -1196,7 +1204,7 @@ struct file *file_open_root(const struct path *root,
 EXPORT_SYMBOL(file_open_root);
 
 /**
- * 打开文件open的核心代码
+ * 打开文件(open)｜创建文件(create) 的核心代码
  * 
  * dfd: 基准目录的fd 
  */ 
@@ -1210,18 +1218,18 @@ static long do_sys_openat2(int dfd, const char __user *filename,
 	if (fd)
 		return fd;
 
-	tmp = getname(filename);
+	tmp = getname(filename); // 将用户空间的文件名复制到内核空间
 	if (IS_ERR(tmp))
 		return PTR_ERR(tmp);
 
-	fd = get_unused_fd_flags(how->flags);
+	fd = get_unused_fd_flags(how->flags); // 分配文件描述符
 	if (fd >= 0) {
-		struct file *f = do_filp_open(dfd, tmp, &op);
+		struct file *f = do_filp_open(dfd, tmp, &op); // 解析文件路径，得到文件的inode并创建file
 		if (IS_ERR(f)) {
 			put_unused_fd(fd);
 			fd = PTR_ERR(f);
 		} else {
-			fsnotify_open(f);
+			fsnotify_open(f); // 通知打开文件事件，进程可以使用inotify监视文件系统的事件
 			fd_install(fd, f);
 		}
 	}
@@ -1318,6 +1326,10 @@ COMPAT_SYSCALL_DEFINE4(openat, int, dfd, const char __user *, filename, int, fla
 /*
  * For backward compatibility?  Maybe this should be moved
  * into arch/i386 instead?
+ * 
+ * AT_FDCWD: 如果文件路径是相对路径，则以当前目录为基路径
+ * 
+ * 创建文件：在文件系统中分配一个索引节点，然后在父目录中添加一个目录项。最终还是调用的文件系统类型的索引节点的create方法
  */
 SYSCALL_DEFINE2(creat, const char __user *, pathname, umode_t, mode)
 {
@@ -1325,6 +1337,10 @@ SYSCALL_DEFINE2(creat, const char __user *, pathname, umode_t, mode)
 
 	if (force_o_largefile())
 		flags |= O_LARGEFILE;
+	
+	/**
+	 * 可见创建文件也是在打开文件逻辑中处理的
+	 */ 
 	return do_sys_open(AT_FDCWD, pathname, flags, mode);
 }
 #endif
@@ -1332,6 +1348,9 @@ SYSCALL_DEFINE2(creat, const char __user *, pathname, umode_t, mode)
 /*
  * "id" is the POSIX thread ID. We use the
  * files pointer for this..
+ * 
+ * 关闭打开的文件
+ *     将file实例的引用计数-1，如果减到了0，将file实例放到队列中等待删除(file_table.c flush_delayed_fput方法)
  */
 int filp_close(struct file *filp, fl_owner_t id)
 {
@@ -1359,6 +1378,8 @@ EXPORT_SYMBOL(filp_close);
  * Careful here! We test whether the file pointer is NULL before
  * releasing the fd. This ensures that one clone task can't release
  * an fd while another clone is opening it.
+ * 
+ * 关闭文件系统调用
  */
 SYSCALL_DEFINE1(close, unsigned int, fd)
 {

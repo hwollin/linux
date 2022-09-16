@@ -579,7 +579,7 @@ struct nameidata {
 	struct filename	*name;
 	struct nameidata *saved;
 	unsigned	root_seq;
-	int		dfd;
+	int		dfd; // 相对路径的基准目录的fd
 	kuid_t		dir_uid;
 	umode_t		dir_mode;
 } __randomize_layout;
@@ -664,6 +664,9 @@ static void drop_links(struct nameidata *nd)
 	}
 }
 
+/**
+ * 释放解析文件目录过程中保存的目录项和挂在描述符
+ */ 
 static void terminate_walk(struct nameidata *nd)
 {
 	drop_links(nd);
@@ -1678,6 +1681,9 @@ static struct dentry *lookup_slow(const struct qstr *name,
 	return res;
 }
 
+/**
+ * 检查目录的访问权限
+ */ 
 static inline int may_lookup(struct user_namespace *mnt_userns,
 			     struct nameidata *nd)
 {
@@ -1950,6 +1956,9 @@ static const char *handle_dots(struct nameidata *nd, int type)
 	return NULL;
 }
 
+/**
+ * 解析文件路径的一个分量
+ */ 
 static const char *walk_component(struct nameidata *nd, int flags)
 {
 	struct dentry *dentry;
@@ -1959,17 +1968,23 @@ static const char *walk_component(struct nameidata *nd, int flags)
 	 * "." and ".." are special - ".." especially so because it has
 	 * to be able to know about the current root directory and
 	 * parent relationships.
+	 * 
+	 * .和..是特殊的分量
 	 */
 	if (unlikely(nd->last_type != LAST_NORM)) {
 		if (!(flags & WALK_MORE) && nd->depth)
 			put_link(nd);
-		return handle_dots(nd, nd->last_type);
+		return handle_dots(nd, nd->last_type); // 处理 . 和 ..
 	}
-	dentry = lookup_fast(nd, &inode, &seq);
+
+	/**
+	 * 以下为处理正常的目录和文件名
+	 */ 
+	dentry = lookup_fast(nd, &inode, &seq); // 在内存的目录项缓存中查找
 	if (IS_ERR(dentry))
 		return ERR_CAST(dentry);
 	if (unlikely(!dentry)) {
-		dentry = lookup_slow(&nd->last, nd->path.dentry, nd->flags);
+		dentry = lookup_slow(&nd->last, nd->path.dentry, nd->flags); // 缓存没找到，调用文件系统类型的lookup方法来查找
 		if (IS_ERR(dentry))
 			return ERR_CAST(dentry);
 	}
@@ -2213,6 +2228,8 @@ static inline u64 hash_name(const void *salt, const char *name)
  *
  * Returns 0 and nd will have valid dentry and mnt on success.
  * Returns error and drops reference to input namei data on failure.
+ * 
+ * 解析文件路径
  */
 static int link_path_walk(const char *name, struct nameidata *nd)
 {
@@ -2230,7 +2247,11 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 		return 0;
 	}
 
-	/* At this point we know we have a real path component. */
+	/** 
+	 * At this point we know we have a real path component. 
+	 * 
+	 * 每次解析一个分量
+	 */
 	for(;;) {
 		struct user_namespace *mnt_userns;
 		const char *link;
@@ -2238,7 +2259,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 		int type;
 
 		mnt_userns = mnt_user_ns(nd->path.mnt);
-		err = may_lookup(mnt_userns, nd);
+		err = may_lookup(mnt_userns, nd); // 检查目录的访问权限
 		if (err)
 			return err;
 
@@ -2296,7 +2317,7 @@ OK:
 			link = walk_component(nd, 0);
 		} else {
 			/* not the last component */
-			link = walk_component(nd, WALK_MORE);
+			link = walk_component(nd, WALK_MORE); // 解析文件路径的一个分量
 		}
 		if (unlikely(link)) {
 			if (IS_ERR(link))
@@ -3234,6 +3255,8 @@ static struct dentry *atomic_open(struct nameidata *nd, struct dentry *dentry,
  * hadn't been specified.
  *
  * An error code is returned on failure.
+ * 
+ * 查找/创建 文件，最后打开文件
  */
 static struct dentry *lookup_open(struct nameidata *nd, struct file *file,
 				  const struct open_flags *op,
@@ -3252,7 +3275,7 @@ static struct dentry *lookup_open(struct nameidata *nd, struct file *file,
 		return ERR_PTR(-ENOENT);
 
 	file->f_mode &= ~FMODE_CREATED;
-	dentry = d_lookup(dir, &nd->last);
+	dentry = d_lookup(dir, &nd->last); // 在内存的目录项缓存中查找
 	for (;;) {
 		if (!dentry) {
 			dentry = d_alloc_parallel(dir, &nd->last, &wq);
@@ -3295,7 +3318,7 @@ static struct dentry *lookup_open(struct nameidata *nd, struct file *file,
 			mode &= ~current_umask();
 		if (likely(got_write))
 			create_error = may_o_create(mnt_userns, &nd->path,
-						    dentry, mode);
+						    dentry, mode); // 检查是否具有创建文件的权限
 		else
 			create_error = -EROFS;
 	}
@@ -3332,7 +3355,7 @@ static struct dentry *lookup_open(struct nameidata *nd, struct file *file,
 		}
 
 		error = dir_inode->i_op->create(mnt_userns, dir_inode, dentry,
-						mode, open_flag & O_EXCL);
+						mode, open_flag & O_EXCL); // 调用文件系统类型的inode的create方法创建文件
 		if (error)
 			goto out_dput;
 	}
@@ -3592,6 +3615,9 @@ static int do_o_path(struct nameidata *nd, unsigned flags, struct file *file)
 	return error;
 }
 
+/**
+ * 解析文件目录
+ */ 
 static struct file *path_openat(struct nameidata *nd,
 			const struct open_flags *op, unsigned flags)
 {
@@ -3608,6 +3634,8 @@ static struct file *path_openat(struct nameidata *nd,
 		error = do_o_path(nd, flags, file);
 	} else {
 		const char *s = path_init(nd, flags);
+
+		// link_path_walk一层一层的处理目录
 		while (!(error = link_path_walk(s, nd)) &&
 		       (s = open_last_lookups(nd, file, op)) != NULL)
 			;
@@ -3631,15 +3659,38 @@ static struct file *path_openat(struct nameidata *nd,
 	return ERR_PTR(error);
 }
 
+/**
+ * 解析文件路径，得到文件的inode并创建file
+ */ 
 struct file *do_filp_open(int dfd, struct filename *pathname,
 		const struct open_flags *op)
 {
+	/**
+	 * 调用函数前存储参数，执行完后保存解析结果
+	 */ 
 	struct nameidata nd;
+
 	int flags = op->lookup_flags;
-	struct file *filp;
+	struct file *filp; // filp -> file pointer
 
 	set_nameidata(&nd, dfd, pathname, NULL);
+
+	/**
+	 * 使用RCU方式查找文件
+	 * 
+	 * RCU: Read-Copy Update，是Linux中比较重要的一种同步机制，适用于读多写少的场景
+	 *     随意读，但更新数据时，先拷贝副本，然后修改副本，最后替换原数据
+	 *     
+	 *     随意读：读者不需要获得任何锁就可以读
+	 *     写：需要锁，写者访问时先拷贝副本，修改副本，然后在合适时机替换原数据   
+	 * 
+	 *     在文件系统中，经常需要查找定位目录，而对目录的修改并不多，是RCU发挥作用的最佳场景
+	 */ 
 	filp = path_openat(&nd, op, flags | LOOKUP_RCU);
+
+	/**
+	 * 上面解析时发现其他线程修改了正在查找的目录
+	 */
 	if (unlikely(filp == ERR_PTR(-ECHILD)))
 		filp = path_openat(&nd, op, flags);
 	if (unlikely(filp == ERR_PTR(-ESTALE)))
@@ -4097,6 +4148,9 @@ exit1:
 	return error;
 }
 
+/**
+ * 删除目录系统调用
+ */ 
 SYSCALL_DEFINE1(rmdir, const char __user *, pathname)
 {
 	return do_rmdir(AT_FDCWD, getname(pathname));
@@ -4177,6 +4231,10 @@ EXPORT_SYMBOL(vfs_unlink);
  * directory's i_mutex.  Truncate can take a long time if there is a lot of
  * writeout happening, and we don't want to prevent access to the directory
  * while waiting on the I/O.
+ * 
+ * 删除文件：
+ *    <1> 从父目录的数据中删除对应的dentry
+ *    <2> 将文件的inode的硬链接计数-1，如果硬链接数量变为0，则删除inode(调用文件系统类型的inode的unlink方法)
  */
 int do_unlinkat(int dfd, struct filename *name)
 {
@@ -4189,7 +4247,7 @@ int do_unlinkat(int dfd, struct filename *name)
 	struct inode *delegated_inode = NULL;
 	unsigned int lookup_flags = 0;
 retry:
-	error = filename_parentat(dfd, name, lookup_flags, &path, &last, &type);
+	error = filename_parentat(dfd, name, lookup_flags, &path, &last, &type); // 解析文件路径
 	if (error)
 		goto exit1;
 
@@ -4197,12 +4255,12 @@ retry:
 	if (type != LAST_NORM)
 		goto exit2;
 
-	error = mnt_want_write(path.mnt);
+	error = mnt_want_write(path.mnt); // 检查写访问权限
 	if (error)
 		goto exit2;
 retry_deleg:
 	inode_lock_nested(path.dentry->d_inode, I_MUTEX_PARENT);
-	dentry = __lookup_hash(&last, path.dentry, lookup_flags);
+	dentry = __lookup_hash(&last, path.dentry, lookup_flags); // 查找目录项
 	error = PTR_ERR(dentry);
 	if (!IS_ERR(dentry)) {
 		struct user_namespace *mnt_userns;
@@ -4219,7 +4277,7 @@ retry_deleg:
 			goto exit3;
 		mnt_userns = mnt_user_ns(path.mnt);
 		error = vfs_unlink(mnt_userns, path.dentry->d_inode, dentry,
-				   &delegated_inode);
+				   &delegated_inode); // 删除文件
 exit3:
 		dput(dentry);
 	}
@@ -4264,6 +4322,11 @@ SYSCALL_DEFINE3(unlinkat, int, dfd, const char __user *, pathname, int, flag)
 	return do_unlinkat(dfd, getname(pathname));
 }
 
+/**
+ * link，为已经存在的文件创建一个新的硬链接,见struct inode
+ * 
+ * unlink, delete a name and possibly the file it refers to, 删除一个硬链接/名字，如果硬链接数量为0，则从内存中删除文件
+ */ 
 SYSCALL_DEFINE1(unlink, const char __user *, pathname)
 {
 	return do_unlinkat(AT_FDCWD, getname(pathname));

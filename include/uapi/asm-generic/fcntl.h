@@ -60,7 +60,7 @@
 #define O_NOATIME	01000000
 #endif
 #ifndef O_CLOEXEC
-#define O_CLOEXEC	02000000	/* set close_on_exec */
+#define O_CLOEXEC	02000000	/* set close_on_exec 执行程序时关闭文件 */
 #endif
 
 /*

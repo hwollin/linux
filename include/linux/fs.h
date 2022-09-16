@@ -473,10 +473,12 @@ int pagecache_write_end(struct file *, struct address_space *mapping,
  * @private_lock: For use by the owner of the address_space.
  * @private_list: For use by the owner of the address_space.
  * @private_data: For use by the owner of the address_space.
+ * 
+ * 文件在内存中的缓存，缓存的粒度为页
  */
 struct address_space {
-	struct inode		*host;
-	struct xarray		i_pages;
+	struct inode		*host; // 哪个文件的缓存
+	struct xarray		i_pages; // 缓存的页
 	struct rw_semaphore	invalidate_lock;
 	gfp_t			gfp_mask;
 	atomic_t		i_mmap_writable;
@@ -488,7 +490,7 @@ struct address_space {
 	struct rw_semaphore	i_mmap_rwsem;
 	unsigned long		nrpages;
 	pgoff_t			writeback_index;
-	const struct address_space_operations *a_ops;
+	const struct address_space_operations *a_ops; // 定义在address_space上的操作集合
 	unsigned long		flags;
 	errseq_t		wb_err;
 	spinlock_t		private_lock;
@@ -664,7 +666,7 @@ struct inode {
 
 	const struct inode_operations	*i_op; // 定义在inode上的操作
 	struct super_block	*i_sb; // 该文件所属文件系统的超级块
-	struct address_space	*i_mapping; // 指向文件的地址空间
+	struct address_space	*i_mapping; // 指向文件的地址空间， 即文件在内存中的缓存
 
 #ifdef CONFIG_SECURITY
 	void			*i_security;
@@ -1044,7 +1046,7 @@ struct file {
 	/* Used by fs/eventpoll.c to link all the hooks to this file */
 	struct hlist_head	*f_ep;
 #endif /* #ifdef CONFIG_EPOLL */
-	struct address_space	*f_mapping;
+	struct address_space	*f_mapping;  // 文件在内存中的缓存
 	errseq_t		f_wb_err;
 	errseq_t		f_sb_err; /* for syncfs */
 } __randomize_layout

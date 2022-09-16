@@ -250,6 +250,8 @@ struct file *alloc_file_clone(struct file *base, int flags,
 }
 
 /* the real guts of fput() - releasing the last reference to file
+ *
+ * 释放file的核心代码
  */
 static void __fput(struct file *file)
 {
@@ -263,21 +265,28 @@ static void __fput(struct file *file)
 
 	might_sleep();
 
-	fsnotify_close(file);
+	fsnotify_close(file); // 通知文件关闭事件 
 	/*
 	 * The function eventpoll_release() should be the first called
 	 * in the file cleanup chain.
+	 * 
+	 * poll 轮询的意思
 	 */
-	eventpoll_release(file);
-	locks_remove_file(file);
+	eventpoll_release(file); // 如果进程使用eventpoll监听文件系统的事件，那么将文件从eventpoll中删除
+	locks_remove_file(file); // 如果进程持有文件锁，那么释放文件锁
 
 	ima_file_free(file);
 	if (unlikely(file->f_flags & FASYNC)) {
 		if (file->f_op->fasync)
 			file->f_op->fasync(-1, file, 0);
 	}
+    
+	/**
+	 * 调用具体文件系统类型的文件release方法
+	 */ 
 	if (file->f_op->release)
 		file->f_op->release(inode, file);
+
 	if (unlikely(S_ISCHR(inode->i_mode) && inode->i_cdev != NULL &&
 		     !(mode & FMODE_PATH))) {
 		cdev_put(inode->i_cdev);
@@ -293,9 +302,9 @@ static void __fput(struct file *file)
 	dput(dentry);
 	if (unlikely(mode & FMODE_NEED_UNMOUNT))
 		dissolve_on_fput(mnt);
-	mntput(mnt);
+	mntput(mnt); // 释放挂载描述符
 out:
-	file_free(file);
+	file_free(file); // 释放file实例的内存
 }
 
 static LLIST_HEAD(delayed_fput_list);
@@ -352,6 +361,9 @@ void fput_many(struct file *file, unsigned int refs)
 	}
 }
 
+/**
+ * 将file放入到工作队列中
+ */ 
 void fput(struct file *file)
 {
 	fput_many(file, 1);

@@ -493,8 +493,10 @@ static unsigned int find_next_fd(struct fdtable *fdt, unsigned int start)
 	return find_next_zero_bit(fdt->open_fds, maxfd, start);
 }
 
-/*
+/**
  * allocate a file descriptor, mark it busy.
+ * 
+ * 从[start, end)区间分配一个文件描述符
  */
 static int alloc_fd(unsigned start, unsigned end, unsigned flags)
 {
@@ -507,20 +509,29 @@ static int alloc_fd(unsigned start, unsigned end, unsigned flags)
 repeat:
 	fdt = files_fdtable(files);
 	fd = start;
-	if (fd < files->next_fd)
+	/**
+	 * 尝试 上次分配的文件描述符+1
+	 */ 
+	if (fd < files->next_fd) 
 		fd = files->next_fd;
 
+    // max_fds 打开文件表的大小
 	if (fd < fdt->max_fds)
 		fd = find_next_fd(fdt, fd);
 
 	/*
 	 * N.B. For clone tasks sharing a files structure, this test
 	 * will limit the total number of files that can be opened.
+	 * 
+	 * 进程打开的文件数量超过限制，返回错误
 	 */
 	error = -EMFILE;
 	if (fd >= end)
 		goto out;
 
+    /**
+	 * 打开文件表扩容
+	 */ 
 	error = expand_files(files, fd);
 	if (error < 0)
 		goto out;
@@ -532,10 +543,20 @@ repeat:
 	if (error)
 		goto repeat;
 
+	/**
+	 * 记录下次尝试的位置 
+	 */
 	if (start <= files->next_fd)
 		files->next_fd = fd + 1;
 
+	/**
+	 * 在文件描述符位图中标记fd已被使用
+	 */ 
 	__set_open_fd(fd, fdt);
+
+	/**
+	 * execve时关闭文件
+	 */ 
 	if (flags & O_CLOEXEC)
 		__set_close_on_exec(fd, fdt);
 	else
@@ -659,6 +680,9 @@ out_unlock:
 	return file;
 }
 
+/**
+ * 通过fd关闭文件
+ */ 
 int close_fd(unsigned fd)
 {
 	struct files_struct *files = current->files;

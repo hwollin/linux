@@ -44,6 +44,8 @@ struct vfsmount;
  *
  * hash comes first so it snuggles against d_parent in the
  * dentry.
+ * 
+ * quick string 不仅保存了字符串本身，还包含长度和哈希值等元信息
  */
 struct qstr {
 	union {
